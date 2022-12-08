@@ -2,7 +2,7 @@
 MsyuLuch microservices repository
 
 Status of Last Deployment: <br>
-<img src="https://github.com/Otus-DevOps-22-08/MsyuLuch_microservices/actions/workflows/run-tests.yml/badge.svg"><br>
+<img src="https://github.com/Otus-DevOps-22-08/MsyuLuch_microservices/actions/workflows/%20run-tests.yml/badge.svg"><br>
 
 # Выполнено ДЗ № 14
 
