@@ -21,3 +21,4 @@ vault.key
 */venv
 Pipfile*
 *.vagrant
+/src/comment/hadolint-Linux-x86_64
