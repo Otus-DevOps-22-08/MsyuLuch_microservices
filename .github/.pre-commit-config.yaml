@@ -10,4 +10,4 @@ repos:
     hooks:
         - id: hadolint
           entry: hadolint
-          args: ["--ignore=DL3020", "--ignore=DL3042", "--ignore=DL3018", "--ignore=DL3008", "--ignore=DL3028", "--ignore=DL3009", "--ignore=DL3015"]
+          args: ["--ignore=DL3020", "--ignore=DL3042", "--ignore=DL3018", "--ignore=DL3008", "--ignore=DL3028", "--ignore=DL3009", "--ignore=DL3015", "--ignore=DL3013"]
