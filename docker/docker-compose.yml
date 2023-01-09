@@ -1,0 +1,93 @@
+version: '3.3'
+services:
+  post_db:
+    image: mongo:${MONGO_VERSION}
+    volumes:
+      - post_db:/data/db
+    networks:
+      back_net:
+        aliases:
+          - post_db
+          - comment_db
+    env_file:
+      - .env
+  ui:
+    image: ${USERNAME}/ui:${UI_VERSION}
+    ports:
+      - ${HOST_PORT}:${PORT}/tcp
+    networks:
+      - front_net
+    env_file:
+      - .env
+  post:
+    image: ${USERNAME}/post:${POST_VERSION}
+    networks:
+      - back_net
+      - front_net
+    env_file:
+      - .env
+  comment:
+    build: ./comment
+    image: ${USERNAME}/comment:${COMMENT_VERSION}
+    networks:
+      - back_net
+      - front_net
+    env_file:
+      - .env
+  prometheus:
+    image:  ${USERNAME}/prometheus:${PROMETHEUS_VERSION}
+    networks:
+      - back_net
+      - front_net
+    ports:
+    - '9090:9090'
+    volumes:
+    - prometheus_data:/prometheus
+    command: # Передаем доп параметры в командной строке
+    - '--config.file=/etc/prometheus/prometheus.yml'
+    - '--storage.tsdb.path=/prometheus'
+    - '--storage.tsdb.retention=1d' # Задаем время хранения метрик в 1 день
+    env_file:
+      - .env
+  node-exporter:
+    image: prom/node-exporter:v0.15.2
+    user: root
+    networks:
+      - back_net
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.ignored-mount-points="^/(sys|proc|dev|host|etc)($$|/)"'
+  blackbox-exporter:
+    image: bitnami/blackbox-exporter:0.23.0
+
+    ports:
+      - '9115:9115'
+    networks:
+      - back_net
+      - front_net
+  mongo-exporter:
+    image: bitnami/mongodb-exporter:0.36.0
+    command:
+      - '--mongodb.uri=mongodb://post_db'
+      - '--collect-all'
+    networks:
+      - back_net
+
+volumes:
+  post_db:
+  prometheus_data:
+
+networks:
+  front_net:
+    ipam:
+      config:
+      - subnet:  10.0.2.0/24
+  back_net:
+    ipam:
+      config:
+      - subnet:  10.0.1.0/24
