@@ -35,7 +35,7 @@ services:
     env_file:
       - .env
   prometheus:
-    image:  ${USERNAME}/prometheus:${PROMETHEUS_VERSION}
+    image:  ${USERNAME}/prometheus
     networks:
       - back_net
       - front_net
