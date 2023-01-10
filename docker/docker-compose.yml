@@ -27,7 +27,6 @@ services:
     env_file:
       - .env
   comment:
-    build: ./comment
     image: ${USERNAME}/comment:${COMMENT_VERSION}
     networks:
       - back_net
@@ -43,10 +42,10 @@ services:
     - '9090:9090'
     volumes:
     - prometheus_data:/prometheus
-    command: # Передаем доп параметры в командной строке
+    command:
     - '--config.file=/etc/prometheus/prometheus.yml'
     - '--storage.tsdb.path=/prometheus'
-    - '--storage.tsdb.retention=1d' # Задаем время хранения метрик в 1 день
+    - '--storage.tsdb.retention=1d'
     env_file:
       - .env
   node-exporter:
