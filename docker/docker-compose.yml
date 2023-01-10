@@ -64,7 +64,6 @@ services:
       - '--collector.filesystem.ignored-mount-points="^/(sys|proc|dev|host|etc)($$|/)"'
   blackbox-exporter:
     image: bitnami/blackbox-exporter:0.23.0
-
     ports:
       - '9115:9115'
     networks:
