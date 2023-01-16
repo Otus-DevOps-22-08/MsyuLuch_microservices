@@ -8,9 +8,8 @@ WORKDIR $APP_HOME
 
 COPY . $APP_HOME
 
-RUN apk --no-cache --update add build-base && \
-    bundle install && \
-    apk del build-base && \
+RUN apk --no-cache update && apk add --no-cache gcc libc-dev musl-dev build-base && \
+    apk del gcc musl-dev libc-dev build-base && \
     rm -rf /var/lib/apt/lists/*
 
 CMD ["puma"]
