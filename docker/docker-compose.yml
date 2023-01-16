@@ -12,7 +12,7 @@ services:
     env_file:
       - .env
   ui:
-    image: ${USERNAME}/ui:${IMAGES_VERSION}
+    image: ${USER_NAME}/ui:${IMAGES_VERSION}
     ports:
       - ${HOST_PORT}:${PORT}/tcp
     networks:
@@ -47,7 +47,7 @@ services:
         fluentd-address: localhost:24224
         tag: service.post
   comment:
-    image: ${USERNAME}/comment:${IMAGES_VERSION}
+    image: ${USER_NAME}/comment:${IMAGES_VERSION}
     networks:
       - back_net
       - front_net
