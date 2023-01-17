@@ -4,85 +4,91 @@ MsyuLuch microservices repository
 Status of Last Deployment: <br>
 <img src="https://github.com/Otus-DevOps-22-08/MsyuLuch_microservices/actions/workflows/%20run-tests.yml/badge.svg"><br>
 
-# Выполнено ДЗ № 16
+# Выполнено ДЗ № 17
 
  - [+] Основное ДЗ
  - [] Задание со *
 
 ## В процессе сделано:
 
- 1. Собрали образ `Prometheus`, исходники находятся в папке `monitoring\prometheus`.
- Конфигурационный файл `prometheus.yml` включает в себя следующие цели для сбора метрик:
+ 1. Обновили версии всех сервисов: post, ui, comment. Собрали новые образы с тегом `logging` и загрузили на DockerHub
+
+ 2. Создали новую docker-machine для запуска проекта с логгированием
+
+ 3. Создали отдельный `docker/docker-compose-logging.yml,` включающий в себя стэк: ElasticSearch (для храннения логов), Kibana (для визуализации), Fluentd (для сбороа логов)
+
+ 4. Собрали образ Fluentd, исходники находятся в директории `logging/fluentd/Dockerfile`. Конфигурационный файл `logging/fluentd/fluent.conf` включает описание основных параметров для сбора логов и отправки их дальше для хранения в ElasticSearch. Так же в файл добавлены фильтры для сортировки информации по сервисам (структурирование логов). Для облегчения задачи парсинга вместо стандартных регулярок были использованы grok-шаблоны.
 
  ```
-  - job_name: 'node'
-    static_configs:
-      - targets:
-        - 'node-exporter:9100'
-
-  - job_name: 'mongo'
-    static_configs:
-      - targets:
-        - 'mongodb-exporter:9216'
-
-  - job_name: 'blackbox'
-    metrics_path: /probe
-        params:
-          module: [http_2xx]
-        static_configs:
-          - targets:
-            - 'ui:9292'
-            - 'comment:9292/healthcheck'
-            - 'post:5000/posts'
-    relabel_configs:
-            replacement: blackbox-exporter:9115
+  #  cd logging/fluentd
+  #  docker build -t $USER_NAME/fluentd .
  ```
 
- 2. Образы залиты на DockeHub
+ ```
+    …
+    <filter service.ui>
+    @type parser
+    format grok
+    grok_pattern %{RUBY_LOGGER}
+    key_name log
+    </filter>
+    …
+ ```
+
+ 5. В описание сервисов добавили опции для сбора логов
 
  ```
- https://hub.docker.com/repository/docker/123344555/prometheus
- https://hub.docker.com/repository/docker/123344555/post
- https://hub.docker.com/repository/docker/123344555/comment
- https://hub.docker.com/repository/docker/123344555/ui
+      …
+      post:
+      …
+      logging:
+      driver: "fluentd"
+      options:
+      fluentd-address: localhost:24224
+      tag: service.post
+
+      ui:
+      …
+      logging:
+      driver: "fluentd"
+      options:
+      fluentd-address: localhost:24224
+      tag: service.ui
+      …
+
  ```
 
- 3. В `docker-compose.yml` добавили сервисов:
+ 6. Добавили новый сервис для распределенного трекинга Zipkin:
 
  ```
-  prometheus:
-    build: ./prometheus
-    image:  ${USERNAME}/prometheus:${PROMETHEUS_VERSION}
+    services:
+      zipkin:
+        image: openzipkin/zipkin:2.21.0
+        ports:
+        - "9411:9411"
+ ```
 
-  node-exporter:
-    image: prom/node-exporter:v0.15.2
-    user: root
+ 7. Для сервисов приложения добавили параметр:
 
-  blackbox-exporter:
-    image: bitnami/blackbox-exporter:0.23.0
-    ports:
-      - '9115:9115'
-
-  mongo-exporter:
-    image: bitnami/mongodb-exporter:0.36.0
-    command:
-      - '--mongodb.uri=mongodb://post_db'
-      - '--collect-all'
+ ```
+    environment:
+      - ZIPKIN_ENABLED=${ZIPKIN_ENABLED}
  ```
 
 ## Как запустить проект:
 
 ```
-   $ docker-compose up -d
-   $ docker-compose ps
+  # cd docker && docker-compose up -d
+  # docker-compose -f docker-compose-logging.yml up -d
 ```
 
 ## Как проверить работоспособность:
 
   - Docker хост в Yandex Cloud с развернутым приложением:
 
-    http://51.250.6.169:9292/
-    http://51.250.6.169:9090/
+    http://51.250.91.120:9292/
+    http://51.250.91.120:5601/
+    http://51.250.91.120:9411/
 
 ## PR checklist
  - [+] Выставил label с темой домашнего задания
