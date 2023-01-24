@@ -4,91 +4,131 @@ MsyuLuch microservices repository
 Status of Last Deployment: <br>
 <img src="https://github.com/Otus-DevOps-22-08/MsyuLuch_microservices/actions/workflows/%20run-tests.yml/badge.svg"><br>
 
-# Выполнено ДЗ № 17
+# Выполнено ДЗ № 18
 
  - [+] Основное ДЗ
  - [] Задание со *
 
 ## В процессе сделано:
 
- 1. Обновили версии всех сервисов: post, ui, comment. Собрали новые образы с тегом `logging` и загрузили на DockerHub
+ 1. Создали новую ВМ и установили Docker
 
- 2. Создали новую docker-machine для запуска проекта с логгированием
+ 2. Запустили GitLab, используя docker-compose.yml
 
- 3. Создали отдельный `docker/docker-compose-logging.yml,` включающий в себя стэк: ElasticSearch (для храннения логов), Kibana (для визуализации), Fluentd (для сбороа логов)
+```
+    web:
+      image: 'gitlab/gitlab-ce:latest'
+      restart: always
+      hostname: 'gitlab.example.com'
+      environment:
+        GITLAB_OMNIBUS_CONFIG: |
+          external_url 'http://<YOUR-VM-IP>'
+      ports:
+        - '80:80'
+        - '443:443'
+        - '2222:22'
+      volumes:
+        - '/srv/gitlab/config:/etc/gitlab'
+        - '/srv/gitlab/logs:/var/log/gitlab'
+        - '/srv/gitlab/data:/var/opt/gitlab'
 
- 4. Собрали образ Fluentd, исходники находятся в директории `logging/fluentd/Dockerfile`. Конфигурационный файл `logging/fluentd/fluent.conf` включает описание основных параметров для сбора логов и отправки их дальше для хранения в ElasticSearch. Так же в файл добавлены фильтры для сортировки информации по сервисам (структурирование логов). Для облегчения задачи парсинга вместо стандартных регулярок были использованы grok-шаблоны.
+```
 
- ```
-  #  cd logging/fluentd
-  #  docker build -t $USER_NAME/fluentd .
- ```
+ 3. Авторизовались в GitLab, создали новую группу и проект `homework/example`
 
- ```
-    …
-    <filter service.ui>
-    @type parser
-    format grok
-    grok_pattern %{RUBY_LOGGER}
-    key_name log
-    </filter>
-    …
- ```
+ 4. Добавили и зарегистрировали Runner
 
- 5. В описание сервисов добавили опции для сбора логов
-
- ```
-      …
-      post:
-      …
-      logging:
-      driver: "fluentd"
-      options:
-      fluentd-address: localhost:24224
-      tag: service.post
-
-      ui:
-      …
-      logging:
-      driver: "fluentd"
-      options:
-      fluentd-address: localhost:24224
-      tag: service.ui
-      …
+ 5. Добавили в репозиторий приложение `reddit`. В корень добавили файл `.gitlab-ci.yml` для определения пайплайна:
 
  ```
+        image: ruby:2.4.2
 
- 6. Добавили новый сервис для распределенного трекинга Zipkin:
+        stages:
+          - build
+          - test
+          - review
+          - stage
+          - production
+
+        variables:
+          DATABASE_URL: 'mongodb://mongo/user_posts'
+
+        before_script:
+          - cd reddit
+          - bundle install
+
+        build_job:
+          stage: build
+          script:
+            - echo 'Building'
+
+        test_unit_job:
+          stage: test
+          services:
+            - mongo:latest
+          script:
+            - ruby simpletest.rb
+
+        test_integration_job:
+          stage: test
+          script:
+            - echo 'Testing 2'
+
+        deploy_dev_job:
+          stage: review
+          script:
+            - echo 'Deploy'
+          environment:
+            name: dev
+            url: http://dev.example.com
+
+        branch review:
+        stage: review
+        script: echo "Deploy to $CI_ENVIRONMENT_SLUG"
+        environment:
+            name: branch/$CI_COMMIT_REF_NAME
+            url: http://$CI_ENVIRONMENT_SLUG.example.com
+        only:
+            - branches
+        except:
+            - master
+
+        staging:
+          stage: stage
+          when: manual
+          only:
+            - /^\d+\.\d+\.\d+/
+          script:
+            - echo 'Deploy'
+          environment:
+            name: beta
+            url: http://beta.example.com
+
+        production:
+          stage: production
+          when: manual
+          script:
+            - echo 'Deploy'
+          environment:
+            name: production
+            url: http://example.com
 
  ```
-    services:
-      zipkin:
-        image: openzipkin/zipkin:2.21.0
-        ports:
-        - "9411:9411"
- ```
 
- 7. Для сервисов приложения добавили параметр:
+ 6. Проверили работу всех тестов и пайплайна
 
- ```
-    environment:
-      - ZIPKIN_ENABLED=${ZIPKIN_ENABLED}
- ```
+ 7. Настроили уведомления в Slack
+
+ [img](https://github.com/Otus-DevOps-22-08/MsyuLuch_microservices/tree/gitlab-ci-1/gitlab-ci/image.jpg)
 
 ## Как запустить проект:
 
-```
-  # cd docker && docker-compose up -d
-  # docker-compose -f docker-compose-logging.yml up -d
-```
 
 ## Как проверить работоспособность:
 
-  - Docker хост в Yandex Cloud с развернутым приложением:
+  - VM в Yandex Cloud с развернутым приложением:
 
-    http://51.250.91.120:9292/
-    http://51.250.91.120:5601/
-    http://51.250.91.120:9411/
+    http://51.250.69.206/
 
 ## PR checklist
  - [+] Выставил label с темой домашнего задания
