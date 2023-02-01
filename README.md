@@ -54,6 +54,16 @@ Status of Last Deployment: <br>
 
 ## Как проверить работоспособность:
 
+```
+    kubectl cluster-info
+    kubectl get nodes
+    kubectl get pods -A
+
+    kubectl apply -f post-deployment.yml
+
+    kubectl get all
+
+ ```
 
 ## PR checklist
  - [+] Выставил label с темой домашнего задания
