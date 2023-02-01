@@ -1,0 +1,5 @@
+---
+# defaults file for kubernetes
+kube_version: 1.24.9
+kube_domain_name: cluster.local
+docker_repo_key_url: https://download.docker.com/linux/ubuntu/gpg

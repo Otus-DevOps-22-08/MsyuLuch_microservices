@@ -1,0 +1,8 @@
+master:
+  hosts:
+    masterserver:
+      ansible_host: 130.193.36.26
+worker:
+  hosts:
+    workerserver:
+      ansible_host: 158.160.55.60
