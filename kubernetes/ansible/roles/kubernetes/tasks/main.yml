@@ -1,0 +1,16 @@
+---
+# tasks file for kubernetes
+- name: Include install-k8s.yml
+  ansible.builtin.import_tasks: install-k8s.yml
+  tags:
+    - all
+
+- name: Include master-nodes.yml
+  ansible.builtin.import_tasks: master-nodes.yml
+  tags:
+    - master
+
+- name: Include worker-nodes.yml
+  ansible.builtin.import_tasks: worker-nodes.yml
+  tags:
+    - worker

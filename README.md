@@ -4,131 +4,66 @@ MsyuLuch microservices repository
 Status of Last Deployment: <br>
 <img src="https://github.com/Otus-DevOps-22-08/MsyuLuch_microservices/actions/workflows/%20run-tests.yml/badge.svg"><br>
 
-# Выполнено ДЗ № 18
+# Выполнено ДЗ № 19
 
  - [+] Основное ДЗ
- - [] Задание со *
+ - [+] Задание со *
 
 ## В процессе сделано:
 
- 1. Создали новую ВМ и установили Docker
+ 1. Установили k8s на двух нодах при помощи утилиты kubeadm (версия v1.24.9)
 
- 2. Запустили GitLab, используя docker-compose.yml
 
-```
-    web:
-      image: 'gitlab/gitlab-ce:latest'
-      restart: always
-      hostname: 'gitlab.example.com'
-      environment:
-        GITLAB_OMNIBUS_CONFIG: |
-          external_url 'http://<YOUR-VM-IP>'
-      ports:
-        - '80:80'
-        - '443:443'
-        - '2222:22'
-      volumes:
-        - '/srv/gitlab/config:/etc/gitlab'
-        - '/srv/gitlab/logs:/var/log/gitlab'
-        - '/srv/gitlab/data:/var/opt/gitlab'
+ 2. Запустили созданные манифесты в рабочем кластере
 
-```
+      ```
+            kubectl apply -f post-deployment.yml
 
- 3. Авторизовались в GitLab, создали новую группу и проект `homework/example`
+      ```
 
- 4. Добавили и зарегистрировали Runner
+ 3. Описали установку кластера с использованием terraform и ansible
 
- 5. Добавили в репозиторий приложение `reddit`. В корень добавили файл `.gitlab-ci.yml` для определения пайплайна:
+ 4. terraform разворачивает 2 ВМ, на которых после выполняются playbooks
+      - настройка обоих нод перед разворачиваием кластера
+      - настройка мастер-ноды
+      - настройка воркер-ноды
 
  ```
-        image: ruby:2.4.2
+    terraform apply -auto-approve=true
+    terraform destroy -auto-approve=true
 
-        stages:
-          - build
-          - test
-          - review
-          - stage
-          - production
-
-        variables:
-          DATABASE_URL: 'mongodb://mongo/user_posts'
-
-        before_script:
-          - cd reddit
-          - bundle install
-
-        build_job:
-          stage: build
-          script:
-            - echo 'Building'
-
-        test_unit_job:
-          stage: test
-          services:
-            - mongo:latest
-          script:
-            - ruby simpletest.rb
-
-        test_integration_job:
-          stage: test
-          script:
-            - echo 'Testing 2'
-
-        deploy_dev_job:
-          stage: review
-          script:
-            - echo 'Deploy'
-          environment:
-            name: dev
-            url: http://dev.example.com
-
-        branch review:
-        stage: review
-        script: echo "Deploy to $CI_ENVIRONMENT_SLUG"
-        environment:
-            name: branch/$CI_COMMIT_REF_NAME
-            url: http://$CI_ENVIRONMENT_SLUG.example.com
-        only:
-            - branches
-        except:
-            - master
-
-        staging:
-          stage: stage
-          when: manual
-          only:
-            - /^\d+\.\d+\.\d+/
-          script:
-            - echo 'Deploy'
-          environment:
-            name: beta
-            url: http://beta.example.com
-
-        production:
-          stage: production
-          when: manual
-          script:
-            - echo 'Deploy'
-          environment:
-            name: production
-            url: http://example.com
-
+    ansible-playbook ./playbooks/k8s.yml --skip-tags "master, worker"
+    ansible-playbook ./playbooks/k8s.yml --limit masterserver --tags "master"
+    ansible-playbook ./playbooks/k8s.yml --limit workerserver --tags "worker"
  ```
 
- 6. Проверили работу всех тестов и пайплайна
+ 6. Проверили запуск манифестов в развернутом с помощью terraform и ansible кластере
 
- 7. Настроили уведомления в Slack
-
- [img](https://github.com/Otus-DevOps-22-08/MsyuLuch_microservices/tree/gitlab-ci-1/gitlab-ci/image.jpg)
+ [img](https://github.com/Otus-DevOps-22-08/MsyuLuch_microservices/tree/kubernetes-1/kubernetes/image.jpg)
 
 ## Как запустить проект:
 
+ ```
+    terraform apply -auto-approve=true
+    terraform destroy -auto-approve=true
+
+    ansible-playbook ./playbooks/k8s.yml --skip-tags "master, worker"
+    ansible-playbook ./playbooks/k8s.yml --limit masterserver --tags "master"
+    ansible-playbook ./playbooks/k8s.yml --limit workerserver --tags "worker"
+ ```
 
 ## Как проверить работоспособность:
 
-  - VM в Yandex Cloud с развернутым приложением:
+```
+    kubectl cluster-info
+    kubectl get nodes
+    kubectl get pods -A
 
-    http://51.250.69.206/
+    kubectl apply -f post-deployment.yml
+
+    kubectl get all
+
+ ```
 
 ## PR checklist
  - [+] Выставил label с темой домашнего задания

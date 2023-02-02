@@ -1,0 +1,148 @@
+---
+- name: Set a hostname
+  ansible.builtin.hostname:
+    name: "{{ inventory_hostname }}"
+  tags:
+    - all
+
+# - name: Update repo and install default app
+#   shell: |
+#           sudo apt-get update && sudo apt update && sudo apt-get install \
+#           ca-certificates \
+#           curl \
+#           gnupg \
+#           lsb-release
+#   ignore_errors: yes
+#   tags:
+#     - all
+
+- name: Create containerd config file
+  file:
+    path: "/etc/modules-load.d/containerd.conf"
+    state: "touch"
+  tags:
+    - all
+
+- name: Add conf for containerd
+  blockinfile:
+    path: "/etc/modules-load.d/containerd.conf"
+    block: |
+          overlay
+          br_netfilter
+  tags:
+    - all
+
+- name: Modprobe
+  shell: |
+          sudo modprobe overlay
+          sudo modprobe br_netfilter
+  tags:
+    - all
+
+- name: Set system configurations for Kubernetes networking
+  file:
+    path: "/etc/sysctl.d/99-kubernetes-cri.conf"
+    state: "touch"
+  tags:
+    - all
+
+- name: Add conf for containerd
+  blockinfile:
+    path: "/etc/sysctl.d/99-kubernetes-cri.conf"
+    block: |
+          net.bridge.bridge-nf-call-iptables = 1
+          net.ipv4.ip_forward = 1
+  tags:
+    - all
+
+- name: Apply new settings
+  command: sudo sysctl --system
+  tags:
+    - all
+
+- name: Disable swap
+  shell: |
+          sudo swapoff -a
+          sudo sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab
+  tags:
+    - all
+
+- name: Copy crictl.yaml
+  copy:
+    src: crictl.yaml
+    dest: /etc/crictl.yaml
+    owner: root
+    mode: 644
+  tags:
+    - all
+
+# - name: Add Dockers official GPG key
+#   shell: |
+#           sudo mkdir -p /etc/apt/keyrings
+#           curl -fs https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+
+# - name: Create directory /etc/apt/keyrings
+#   file:
+#     path=/etc/apt/keyrings
+#     state=directory
+#   tags:
+#     - all
+
+# - name: Add Docker apt repository key.
+#   ansible.builtin.get_url:
+#     url: "{{ docker_repo_key_url }}"
+#     dest: /etc/apt/keyrings/docker.gpg
+#     mode: '0644'
+#     force: true
+#   tags:
+#     - all
+
+- name: install containerd
+  shell: |
+          sudo apt-get update && sudo apt-get install -y containerd
+          sudo mkdir -p /etc/containerd
+          sudo containerd config default | sudo tee /etc/containerd/config.toml
+          sudo systemctl restart containerd
+
+- name: Set up docker repository
+  shell: |
+          echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+  tags:
+    - all
+
+- name: Install containerd
+  shell: |
+          sudo apt-get update && sudo apt update && sudo apt install -y containerd.io
+          sudo systemctl start containerd
+  tags:
+    - all
+
+- name: Install and configure dependencies
+  shell: |
+          sudo apt-get update && sudo apt-get install -y apt-transport-https curl
+          curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+  tags:
+    - all
+
+- name: Create kubernetes repo file
+  file:
+    path: "/etc/apt/sources.list.d/kubernetes.list"
+    state: "touch"
+  tags:
+    - all
+
+- name: Add K8s Source
+  blockinfile:
+    path: "/etc/apt/sources.list.d/kubernetes.list"
+    block: |
+          deb https://apt.kubernetes.io/ kubernetes-xenial main
+  tags:
+    - all
+
+- name: Install kubernetes
+  shell: |
+          sudo apt-get update
+          sudo apt-get install -y kubelet=1.24.9-00 kubeadm=1.24.9-00 kubectl=1.24.9-00
+          sudo apt-mark hold kubelet kubeadm kubectl
+  tags:
+    - all
