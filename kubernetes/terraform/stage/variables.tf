@@ -19,30 +19,18 @@ variable public_key_path {
   description = "Path to the public key used for ssh access"
 }
 
-variable subnet_id {
-  type        = string
-  description = "Subnet"
-}
-
 variable service_account_key_file {
   type        = string
   description = "key .json"
 }
 
-variable count_app {
+variable count_node {
   type        = number
-  description = "count VMs"
+  description = "count Nodes k8s"
   default     = 1
 }
 
-variable app_disk_image {
+variable service_account_id {
+  description = "Service account id"
   type        = string
-  description = "Disk image for app"
-  default     = "fd8snjpoq85qqv0mk9gi"
-}
-
-variable app_disk_size {
-  type        = number
-  description = "Disk size for app"
-  default     = 20
 }

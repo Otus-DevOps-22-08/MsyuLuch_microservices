@@ -4,11 +4,9 @@ provider "yandex" {
   folder_id                = var.folder_id
   zone                     = var.zone
 }
-module "app" {
-  source          = "../modules/app"
-  public_key_path = var.public_key_path
-  app_disk_image  = var.app_disk_image
-  app_disk_size   = var.app_disk_size
-  subnet_id       = var.subnet_id
-  count_app       = var.count_app
+module "k8s" {
+  source                  = "../modules/k8s"
+  public_key_path         = var.public_key_path
+  service_account_id      = var.service_account_id
+  count_node              = var.count_node
 }

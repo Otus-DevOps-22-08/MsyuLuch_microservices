@@ -4,42 +4,74 @@ MsyuLuch microservices repository
 Status of Last Deployment: <br>
 <img src="https://github.com/Otus-DevOps-22-08/MsyuLuch_microservices/actions/workflows/%20run-tests.yml/badge.svg"><br>
 
-# Выполнено ДЗ № 19
+# Выполнено ДЗ № 20
 
  - [+] Основное ДЗ
  - [+] Задание со *
 
 ## В процессе сделано:
 
- 1. Установили k8s на двух нодах при помощи утилиты kubeadm (версия v1.24.9)
+ 1. Развернули k8s локально, с помощью утилиты minikube. Установили kubectl.
 
 
- 2. Запустили созданные манифесты в рабочем кластере
-
-      ```
-            kubectl apply -f post-deployment.yml
+ 2. Описали манифесты для приложения (все исходники в папке ./kubernetes/reddit). Создали свой namespace `dev`.
+ Запустили все описанные ранее манифесты в этом пространстве.
 
       ```
+      Deployment основных составляющих reddit (описание процесса деплоя):
+      ui-deployment.yml
+      post-deployment.yml
+      comment-deployment.yml
+      mongo-deployment.yml
 
- 3. Описали установку кластера с использованием terraform и ansible
+      Services основных составляющих reddit (для связи компонентов между собой и с внешним миром):
+      comment-service.yml
+      mongodb-service.yml
+      post-service.yml
+      ui-service.yml
+      ```
 
- 4. terraform разворачивает 2 ВМ, на которых после выполняются playbooks
-      - настройка обоих нод перед разворачиваием кластера
-      - настройка мастер-ноды
-      - настройка воркер-ноды
+
+      ```
+            kubectl apply -f dev-namespace.yml
+            kubectl apply -f . -n dev
+            kubectl port-forward ui-<id> 9292:9292
+      ```
+
+ 3. Описали установку кластера с использованием terraform
 
  ```
-    terraform apply -auto-approve=true
-    terraform destroy -auto-approve=true
 
-    ansible-playbook ./playbooks/k8s.yml --skip-tags "master, worker"
-    ansible-playbook ./playbooks/k8s.yml --limit masterserver --tags "master"
-    ansible-playbook ./playbooks/k8s.yml --limit workerserver --tags "worker"
+resource "yandex_kubernetes_cluster" "k8s-zonal" {
+  name        = "test-cluster"
+  network_id  = yandex_vpc_network.k8s-network.id
+
+............
+}
+
+resource "yandex_kubernetes_node_group" "k8s-group" {
+  cluster_id = yandex_kubernetes_cluster.k8s-zonal.id
+  name       = "k8s-group"
+  version    = "1.23"
+
+.......
+}
+
+resource "yandex_vpc_network" "k8s-network" {
+  name = "k8s-network"
+}
+.......
+```
+
+ 4. Deploy and Access the Kubernetes Dashboard:
+
  ```
 
- 6. Проверили запуск манифестов в развернутом с помощью terraform и ansible кластере
+ # kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.7.0/aio/deploy/recommended.yaml
+ # kubectl proxy
 
- [img](https://github.com/Otus-DevOps-22-08/MsyuLuch_microservices/tree/kubernetes-1/kubernetes/image.jpg)
+ Dashboard available at http://localhost:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/
+ ```
 
 ## Как запустить проект:
 
@@ -47,23 +79,19 @@ Status of Last Deployment: <br>
     terraform apply -auto-approve=true
     terraform destroy -auto-approve=true
 
-    ansible-playbook ./playbooks/k8s.yml --skip-tags "master, worker"
-    ansible-playbook ./playbooks/k8s.yml --limit masterserver --tags "master"
-    ansible-playbook ./playbooks/k8s.yml --limit workerserver --tags "worker"
+    ## kubectl config unset contexts.yc-test-cluster
+    yc managed-kubernetes cluster get-credentials test-cluster --external
+
+    kubectl apply -f dev-namespace.yml
+    kubectl apply -f . -n dev
+
+    kubectl describe service ui -n dev | grep NodePort
  ```
 
 ## Как проверить работоспособность:
 
-```
-    kubectl cluster-info
-    kubectl get nodes
-    kubectl get pods -A
-
-    kubectl apply -f post-deployment.yml
-
-    kubectl get all
-
- ```
+http://84.201.173.23:31092/
+http://62.84.126.114:31092/
 
 ## PR checklist
  - [+] Выставил label с темой домашнего задания
